@@ -1,0 +1,40 @@
+<?xml version="1.0"?>
+<Container version="2">
+  <Name>urchin</Name>
+  <Repository>ghcr.io/ubermetroid/urchin:latest</Repository>
+  <Registry>https://ghcr.io/ubermetroid/urchin</Registry>
+  <Network>bridge</Network>
+  <MyIP/>
+  <Shell>sh</Shell>
+  <Privileged>false</Privileged>
+  <Support>https://github.com/UberMetroid/urchin</Support>
+  <Project>https://github.com/UberMetroid/urchin</Project>
+  <Overview>Urchin: Hardened, bit-for-bit reproducible GNU Guix + zero-dependency Rust CrowdSec LAPI &amp; AppSec WAF Security Engine appliance for the media stack (Emby, Jellyfin, Seerr, Caddy, and Unraid host syslog).</Overview>
+  <Category>Security: Network:Other</Category>
+  <WebUI>http://[IP]:[PORT:9399]/status</WebUI>
+  <TemplateURL>https://raw.githubusercontent.com/UberMetroid/urchin/main/unraid-template.xml</TemplateURL>
+  <Icon>https://raw.githubusercontent.com/UberMetroid/urchin/main/assets/urchin-icon.png</Icon>
+  <ExtraParams>--restart=unless-stopped --security-opt=no-new-privileges:true --health-cmd="/bin/urchin-health --check" --health-interval=30s --health-timeout=5s --health-retries=3</ExtraParams>
+  <PostArgs/>
+  <CPUset/>
+  <DonateText/>
+  <DonateLink/>
+  <Requires/>
+  <Config Name="CrowdSec LAPI Port" Target="8080" Default="8291" Mode="tcp" Description="CrowdSec Local API (LAPI) Port for bouncers (mapped to 8291 on host for side-by-side testing)" Type="Port" Display="always" Required="true" Mask="false">8291</Config>
+  <Config Name="AppSec WAF Port" Target="7422" Default="7423" Mode="tcp" Description="CrowdSec AppSec WAF Engine Port for Caddy (mapped to 7423 on host for side-by-side testing)" Type="Port" Display="always" Required="true" Mask="false">7423</Config>
+  <Config Name="Health &amp; WAF Status API" Target="9399" Default="9399" Mode="tcp" Description="JSON Health, Active Decisions &amp; Parser Metrics API (/status)" Type="Port" Display="always" Required="false" Mask="false">9399</Config>
+  <Config Name="Config Path" Target="/etc/crowdsec" Default="/mnt/user/appdata/urchin/config" Mode="rw" Description="Persistent CrowdSec configuration directory" Type="Path" Display="always" Required="true" Mask="false">/mnt/user/appdata/urchin/config</Config>
+  <Config Name="Data Path" Target="/var/lib/crowdsec/data" Default="/mnt/user/appdata/urchin/data" Mode="rw" Description="Persistent CrowdSec SQLite database &amp; GeoIP/hub data directory" Type="Path" Display="always" Required="true" Mask="false">/mnt/user/appdata/urchin/data</Config>
+  <Config Name="Caddy Logs" Target="/var/log/caddy" Default="/mnt/user/appdata/caddy/logs" Mode="ro" Description="Caddy access logs directory (read-only)" Type="Path" Display="always" Required="true" Mask="false">/mnt/user/appdata/caddy/logs</Config>
+  <Config Name="Emby Logs" Target="/var/log/emby" Default="/mnt/user/appdata/emby/logs" Mode="ro" Description="Emby Server logs directory (read-only)" Type="Path" Display="always" Required="true" Mask="false">/mnt/user/appdata/emby/logs</Config>
+  <Config Name="Jellyfin Logs" Target="/var/log/jellyfin" Default="/mnt/user/appdata/binhex-jellyfin/logs" Mode="ro" Description="Jellyfin Server logs directory (read-only)" Type="Path" Display="always" Required="true" Mask="false">/mnt/user/appdata/binhex-jellyfin/logs</Config>
+  <Config Name="Seerr Logs" Target="/var/log/seerr" Default="/mnt/user/appdata/binhex-seerr/seerr/logs" Mode="ro" Description="Seerr logs directory (read-only)" Type="Path" Display="always" Required="true" Mask="false">/mnt/user/appdata/binhex-seerr/seerr/logs</Config>
+  <Config Name="Host Syslog" Target="/var/log/host" Default="/var/log" Mode="ro" Description="Unraid host /var/log directory (read-only)" Type="Path" Display="always" Required="false" Mask="false">/var/log</Config>
+  <Config Name="Caddy Bouncer API Key" Target="BOUNCER_KEY_CADDY" Default="" Mode="" Description="Shared API key for caddy-bouncer (auto-provisioned in LAPI on startup)" Type="Variable" Display="always" Required="false" Mask="true"/>
+  <Config Name="LAN Network Whitelist CIDRs" Target="LAN_NETWORK" Default="192.168.1.0/24,100.64.0.0/10" Mode="" Description="Comma-separated LAN/Tailscale subnets whitelisted from CrowdSec bans" Type="Variable" Display="always" Required="true" Mask="false">192.168.1.0/24,100.64.0.0/10</Config>
+  <Config Name="Hub Collections" Target="COLLECTIONS" Default="crowdsecurity/linux crowdsecurity/caddy crowdsecurity/http-cve crowdsecurity/base-http-scenarios crowdsecurity/whitelist-good-actors crowdsecurity/appsec-virtual-patching crowdsecurity/appsec-generic-rules LePresidente/emby LePresidente/jellyfin" Mode="" Description="Space-separated CrowdSec Hub collections installed automatically" Type="Variable" Display="advanced" Required="true" Mask="false">crowdsecurity/linux crowdsecurity/caddy crowdsecurity/http-cve crowdsecurity/base-http-scenarios crowdsecurity/whitelist-good-actors crowdsecurity/appsec-virtual-patching crowdsecurity/appsec-generic-rules LePresidente/emby LePresidente/jellyfin</Config>
+  <Config Name="Timezone" Target="TZ" Default="America/Los_Angeles" Mode="" Description="Container timezone" Type="Variable" Display="advanced" Required="false" Mask="false">America/Los_Angeles</Config>
+  <Config Name="PUID" Target="PUID" Default="99" Mode="" Description="Unprivileged user UID (Unraid nobody=99)" Type="Variable" Display="advanced" Required="false" Mask="false">99</Config>
+  <Config Name="PGID" Target="PGID" Default="100" Mode="" Description="Unprivileged group GID (Unraid users=100)" Type="Variable" Display="advanced" Required="false" Mask="false">100</Config>
+  <Config Name="UMASK" Target="UMASK" Default="002" Mode="" Description="File creation umask (002 = 775 dirs / 664 files)" Type="Variable" Display="advanced" Required="false" Mask="false">002</Config>
+</Container>

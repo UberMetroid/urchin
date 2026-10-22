@@ -1,0 +1,93 @@
+name: Build & Publish Guix Container
+
+on:
+  push:
+    branches: [ main ]
+    tags: [ 'v*' ]
+  schedule:
+    - cron: '0 6 * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  packages: write
+
+jobs:
+  build-and-publish:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Install Rust toolchain
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          components: rustfmt, clippy
+
+      - name: Run Rust Verification Ladder
+        run: |
+          cargo test --workspace --all-targets
+          cargo clippy --workspace --all-targets -- -D warnings -D clippy::unwrap_used -D clippy::expect_used -D clippy::panic
+          cargo fmt --all -- --check
+
+      - name: Build static Rust binaries
+        run: |
+          RUSTFLAGS="-C target-feature=+crt-static" cargo build --release --workspace --target x86_64-unknown-linux-gnu
+          mkdir -p prebuilt
+          cp target/x86_64-unknown-linux-gnu/release/urchin-init prebuilt/
+          cp target/x86_64-unknown-linux-gnu/release/urchin-provision prebuilt/
+          cp target/x86_64-unknown-linux-gnu/release/urchin-health prebuilt/
+
+      - name: Extract latest upstream crowdsec, cscli, and full hub/AppSec seed
+        run: |
+          docker pull crowdsecurity/crowdsec:latest
+          CID=$(docker run -d -e COLLECTIONS="crowdsecurity/linux crowdsecurity/caddy crowdsecurity/http-cve crowdsecurity/base-http-scenarios crowdsecurity/whitelist-good-actors crowdsecurity/appsec-virtual-patching crowdsecurity/appsec-generic-rules LePresidente/emby LePresidente/jellyfin" crowdsecurity/crowdsec:latest)
+          sleep 20
+          docker cp "$CID:/usr/local/bin/crowdsec" prebuilt/crowdsec
+          docker cp "$CID:/usr/local/bin/cscli" prebuilt/cscli
+          docker cp "$CID:/staging" prebuilt/staging
+          docker cp "$CID:/etc/crowdsec/hub" prebuilt/staging/etc/crowdsec/
+          find prebuilt/staging -type l -delete
+          docker rm -fv "$CID"
+          chmod +x prebuilt/crowdsec prebuilt/cscli
+
+      - name: Install GNU Guix
+        uses: rekado/guix-github-action@master
+
+      - name: Pack reproducible Docker image via GNU Guix
+        run: |
+          PACK_PATH=$(guix pack -f docker \
+            --entry-point=/bin/urchin-init \
+            -S /bin=bin -S /etc=etc -S /share=share \
+            -m manifest.scm | tail -n 1)
+          cp "$PACK_PATH" urchin-guix-docker-x86_64.tar.gz
+
+      - name: Smoke-test Guix container image
+        run: |
+          IMAGE_NAME=$(docker load -i urchin-guix-docker-x86_64.tar.gz | awk -F': ' '/Loaded image:/ {print $2}')
+          docker tag "$IMAGE_NAME" ghcr.io/ubermetroid/urchin:latest
+          docker run -d --name urchin-smoke -e DISABLE_ONLINE_API=true -e BOUNCER_KEY_CADDY=smoke_test_key ghcr.io/ubermetroid/urchin:latest
+          for i in $(seq 1 20); do
+            sleep 2
+            if docker exec urchin-smoke /bin/urchin-health --check; then
+              break
+            fi
+          done
+          docker exec urchin-smoke /bin/urchin-health --check
+          docker rm -fv urchin-smoke
+
+      - name: Log in to GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Push to GHCR
+        run: |
+          docker push ghcr.io/ubermetroid/urchin:latest
+          if [[ "${GITHUB_REF}" == refs/tags/v* ]]; then
+            TAG_NAME="${GITHUB_REF#refs/tags/}"
+            docker tag ghcr.io/ubermetroid/urchin:latest "ghcr.io/ubermetroid/urchin:${TAG_NAME}"
+            docker push "ghcr.io/ubermetroid/urchin:${TAG_NAME}"
+          fi

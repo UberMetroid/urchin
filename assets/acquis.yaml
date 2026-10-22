@@ -1,0 +1,30 @@
+filenames:
+  - /var/log/caddy/access.log
+labels:
+  type: caddy
+---
+filenames:
+  - /var/log/emby/embyserver.txt
+labels:
+  type: emby
+---
+filenames:
+  - /var/log/jellyfin/log_*.log
+labels:
+  type: jellyfin
+---
+filenames:
+  - /var/log/seerr/seerr-*.log
+labels:
+  type: seerr
+---
+filenames:
+  - /var/log/host/syslog
+labels:
+  type: syslog
+---
+source: appsec
+appsec_config: crowdsecurity/appsec-default
+labels:
+  type: appsec
+listen_addr: 0.0.0.0:7422

@@ -1,0 +1,9 @@
+name: clownhouse/internal-whitelist
+description: "Whitelist localhost, Docker bridge, Tailscale CGNAT, and home LAN networks"
+whitelist:
+  reason: "Trusted internal, Tailscale, and home LAN networks"
+  cidr:
+    - 127.0.0.0/8
+    - 172.16.0.0/12
+    - 100.64.0.0/10
+    - 192.168.1.0/24

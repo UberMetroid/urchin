@@ -1,0 +1,12 @@
+type: leaky
+name: clownhouse/seerr-bf
+description: "Detect Seerr brute force authentication attempts"
+filter: "evt.Meta.log_type == 'seerr_failed_auth'"
+groupby: "evt.Meta.source_ip"
+capacity: 5
+leakspeed: 30s
+blackhole: 5m
+labels:
+  service: seerr
+  type: bruteforce
+  remediation: true

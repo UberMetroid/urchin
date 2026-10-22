@@ -1,0 +1,8 @@
+[package]
+name = "urchin-init"
+version = "0.1.0"
+edition = "2021"
+license = "MIT"
+description = "PID 1 container supervisor and LAPI/AppSec WAF watchdog for Urchin"
+
+[dependencies]

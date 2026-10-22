@@ -1,0 +1,35 @@
+onsuccess: next_stage
+name: clownhouse/jellyfin-custom-logs
+description: "Parse Jellyfin failed auth (including spaces in username) and general application logs"
+filter: "evt.Parsed.program == 'jellyfin' && evt.Meta.log_type != 'jellyfin_failed_auth'"
+pattern_syntax:
+  JELLYFIN_SPACEUSER: "[^\"]+"
+  JELLYFIN_SPACEDATE: "%{YEAR}-%{MONTHNUM}-%{MONTHDAY} %{HOUR}:%{MINUTE}:%{SECOND}"
+nodes:
+  - grok:
+      pattern: '(\[%{JELLYFIN_SPACEDATE:timestamp}.*\])?.*Authentication request for "%{JELLYFIN_SPACEUSER:username}" has been denied \(IP: "%{IP:source_ip}"\).*'
+      apply_on: message
+      statics:
+        - meta: log_type
+          value: jellyfin_failed_auth
+        - meta: user
+          expression: "evt.Parsed.username"
+        - meta: source_ip
+          expression: "evt.Parsed.source_ip"
+  - grok:
+      pattern: '^\[%{JELLYFIN_SPACEDATE:timestamp}[^\]]*\] \[(?:INF|WRN|ERR|DBG|FTL)\] \[%{NUMBER:thread_id}\] %{GREEDYDATA:jellyfin_msg}'
+      apply_on: message
+      statics:
+        - meta: log_type
+          value: jellyfin_general
+  - grok:
+      pattern: '^%{GREEDYDATA:jellyfin_stacktrace}'
+      apply_on: message
+      statics:
+        - meta: log_type
+          value: jellyfin_stacktrace
+statics:
+  - meta: service
+    value: jellyfin
+  - target: evt.StrTime
+    expression: evt.Parsed.timestamp

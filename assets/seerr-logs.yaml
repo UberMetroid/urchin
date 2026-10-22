@@ -1,0 +1,32 @@
+onsuccess: next_stage
+name: clownhouse/seerr-logs
+description: "Parse Seerr authentication failures and general application logs"
+filter: "evt.Parsed.program == 'seerr'"
+nodes:
+  - grok:
+      pattern: "^%{TIMESTAMP_ISO8601:timestamp} \\[warn\\]\\[Auth\\]: Failed sign-in attempt.*\"ip\":\"::ffff:%{IP:source_ip}\""
+      apply_on: message
+      statics:
+        - meta: log_type
+          value: seerr_failed_auth
+        - meta: source_ip
+          expression: "evt.Parsed.source_ip"
+  - grok:
+      pattern: "^%{TIMESTAMP_ISO8601:timestamp} \\[warn\\]\\[Auth\\]: Failed sign-in attempt.*\"ip\":\"%{IP:source_ip}\""
+      apply_on: message
+      statics:
+        - meta: log_type
+          value: seerr_failed_auth
+        - meta: source_ip
+          expression: "evt.Parsed.source_ip"
+  - grok:
+      pattern: "^%{TIMESTAMP_ISO8601:timestamp} \\[(?:debug|info|warn|error)\\](?:\\[[^\\]]+\\])?: %{GREEDYDATA:seerr_msg}"
+      apply_on: message
+      statics:
+        - meta: log_type
+          value: seerr_general
+statics:
+  - meta: service
+    value: seerr
+  - target: evt.StrTime
+    expression: evt.Parsed.timestamp

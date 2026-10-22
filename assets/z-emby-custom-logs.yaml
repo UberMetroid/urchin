@@ -1,0 +1,22 @@
+onsuccess: next_stage
+name: clownhouse/emby-custom-logs
+description: "Parse Emby general application logs"
+filter: "evt.Parsed.program == 'emby' && evt.Meta.log_type != 'emby_failed_auth'"
+nodes:
+  - grok:
+      pattern: '^%{TIMESTAMP_ISO8601:timestamp} (?:Info|Warn|Error|Debug) %{GREEDYDATA:emby_msg}'
+      apply_on: message
+      statics:
+        - meta: log_type
+          value: emby_general
+  - grok:
+      pattern: '^\t%{GREEDYDATA:emby_stacktrace}'
+      apply_on: message
+      statics:
+        - meta: log_type
+          value: emby_stacktrace
+statics:
+  - meta: service
+    value: emby
+  - target: evt.StrTime
+    expression: evt.Parsed.timestamp
