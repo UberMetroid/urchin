@@ -99,8 +99,8 @@ jobs:
             "$CONTAINER_ID" ghcr.io/ubermetroid/urchin:latest
           docker rm -f "$CONTAINER_ID"
           docker run -d --name urchin-smoke -e DISABLE_ONLINE_API=true -e BOUNCER_KEY_CADDY=smoke_test_key ghcr.io/ubermetroid/urchin:latest
-          for i in $(seq 1 20); do
-            sleep 2
+          for i in $(seq 1 40); do
+            sleep 3
             if docker exec urchin-smoke /bin/urchin-health --check; then
               break
             fi

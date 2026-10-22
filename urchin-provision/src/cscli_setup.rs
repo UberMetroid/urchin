@@ -27,6 +27,7 @@ pub fn run_cscli(args: &[&str]) -> Result<String, String> {
     full_args.extend_from_slice(args);
     let output = Command::new("cscli")
         .args(&full_args)
+        .env("SSL_CERT_DIR", "/etc/ssl/certs")
         .output()
         .map_err(|e| format!("Failed to execute cscli {args:?}: {e}"))?;
     if output.status.success() {

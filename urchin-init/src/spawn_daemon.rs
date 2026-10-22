@@ -92,6 +92,7 @@ pub fn apply_appdata_ownership(puid: u32, pgid: u32) {
 pub fn spawn_crowdsec(umask_val: u32) -> Result<Child, String> {
     Command::new("crowdsec")
         .args(["-c", "/etc/crowdsec/config.yaml"])
+        .env("SSL_CERT_DIR", "/etc/ssl/certs")
         .env("UMASK", format_umask(umask_val))
         .spawn()
         .map_err(|e| format!("Failed to spawn crowdsec: {e}"))
