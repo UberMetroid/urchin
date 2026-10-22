@@ -46,8 +46,16 @@ jobs:
       - name: Extract Latest Upstream CrowdSec, cscli & Hub/AppSec Rules
         run: |
           docker pull crowdsecurity/crowdsec:latest
-          CID=$(docker run -d -e COLLECTIONS="crowdsecurity/linux crowdsecurity/caddy crowdsecurity/http-cve crowdsecurity/base-http-scenarios crowdsecurity/whitelist-good-actors crowdsecurity/appsec-virtual-patching crowdsecurity/appsec-generic-rules LePresidente/emby LePresidente/jellyfin" crowdsecurity/crowdsec:latest)
-          sleep 20
+          CID=$(docker run -d \
+            -e CROWDSEC_BYPASS_DB_VOLUME_CHECK=true \
+            -e COLLECTIONS="crowdsecurity/linux crowdsecurity/caddy crowdsecurity/http-cve crowdsecurity/base-http-scenarios crowdsecurity/whitelist-good-actors crowdsecurity/appsec-virtual-patching crowdsecurity/appsec-generic-rules LePresidente/emby LePresidente/jellyfin" \
+            crowdsecurity/crowdsec:latest)
+          for i in $(seq 1 30); do
+            sleep 2
+            if docker exec "$CID" test -d /etc/crowdsec/hub/appsec-rules/crowdsecurity 2>/dev/null; then
+              break
+            fi
+          done
           docker cp "$CID:/usr/local/bin/crowdsec" prebuilt/crowdsec
           docker cp "$CID:/usr/local/bin/cscli" prebuilt/cscli
           docker cp "$CID:/staging" prebuilt/staging
@@ -85,7 +93,6 @@ jobs:
           docker cp prebuilt/urchin-health "$CONTAINER_ID":/bin/urchin-health
           docker cp prebuilt/crowdsec "$CONTAINER_ID":/bin/crowdsec
           docker cp prebuilt/cscli "$CONTAINER_ID":/bin/cscli
-          docker cp prebuilt/staging/. "$CONTAINER_ID":/share/crowdsec/staging/
           docker commit \
             --change 'ENTRYPOINT ["/bin/urchin-init"]' \
             --change 'HEALTHCHECK --interval=30s --timeout=5s --retries=3 CMD ["/bin/urchin-health", "--check"]' \
@@ -98,6 +105,7 @@ jobs:
               break
             fi
           done
+          docker logs urchin-smoke
           docker exec urchin-smoke /bin/urchin-health --check
           docker rm -fv urchin-smoke
           docker tag ghcr.io/ubermetroid/urchin:latest ghcr.io/ubermetroid/urchin:v0.1.0
